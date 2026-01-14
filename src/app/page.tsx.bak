@@ -1,0 +1,266 @@
+export const metadata = {
+  title: "JeRegime",
+  description:
+    "Accompagnement diététique : repas adaptés, courses selon budget, recettes diététiques, RDV diététicien sous 48h.",
+};
+
+import Image from "next/image";
+
+function Container({ children }: { children: React.ReactNode }) {
+  return <div className="mx-auto max-w-6xl px-4 sm:px-6">{children}</div>;
+}
+
+export default function Home() {
+  return (
+    <div>
+      {/* HERO */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0">
+          <Image
+            src="/jr/hero.jpg"
+            alt="JeRegime"
+            fill
+            priority
+            className="object-cover"
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+        </div>
+
+        <Container>
+          <div className="relative py-24 md:py-32 max-w-2xl text-white">
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
+              JeRegime
+              <br />
+              Le régime simple
+              <br />
+              qui tient dans la durée.
+            </h1>
+
+            <p className="mt-6 text-lg text-white/85">
+              Repas adaptés à votre profil. Liste de courses selon votre budget.
+              Recettes diététiques XXL. Suivi régulier + RDV diététicien (visio/téléphone) sous 48h.
+            </p>
+
+            <div className="mt-8 flex flex-col sm:flex-row gap-3">
+              <a
+                href="/signup"
+                className="btn group w-full sm:w-auto bg-linear-to-t from-blue-600 to-blue-500 text-white shadow-sm"
+              >
+                <span className="relative inline-flex items-center">
+                  Commencer{" "}
+                  <span className="ml-1 tracking-normal text-blue-300 transition-transform group-hover:translate-x-0.5">
+                    -&gt;
+                  </span>
+                </span>
+              </a>
+              <a
+                href="#core"
+                className="btn w-full sm:w-auto bg-white text-gray-900 shadow-sm hover:bg-gray-50"
+              >
+                Voir le cœur de l’app
+              </a>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* CORE */}
+      <section id="core">
+        <Container>
+          <div className="py-16">
+            <div className="max-w-3xl pb-10 md:pb-12">
+              <h2 className="h2">Le cœur de JeRegime</h2>
+              <p className="mt-4 text-lg text-gray-700">
+                Tout est centralisé. Vous n’avez rien à calculer : vous suivez un plan clair.
+              </p>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+                <div className="relative h-52">
+                  <Image src="/jr/meals.jpg" alt="Repas" fill className="object-cover" sizes="(max-width:1024px) 100vw, 33vw" />
+                </div>
+                <div className="p-6">
+                  <div className="font-semibold text-gray-900">Repas adaptés</div>
+                  <div className="mt-2 text-sm text-gray-600">
+                    Menus simples, diététiques, compatibles avec vos contraintes.
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+                <div className="relative h-52">
+                  <Image src="/jr/groceries.jpg" alt="Courses" fill className="object-cover" sizes="(max-width:1024px) 100vw, 33vw" />
+                </div>
+                <div className="p-6">
+                  <div className="font-semibold text-gray-900">Courses selon budget</div>
+                  <div className="mt-2 text-sm text-gray-600">
+                    Liste optimisée, anti-gaspillage, selon votre budget.
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+                <div className="relative h-52">
+                  <Image src="/jr/dietitian.jpg" alt="Diététicien" fill className="object-cover" sizes="(max-width:1024px) 100vw, 33vw" />
+                </div>
+                <div className="p-6">
+                  <div className="font-semibold text-gray-900">RDV diététicien</div>
+                  <div className="mt-2 text-sm text-gray-600">
+                    Visio ou téléphone, planification simple, rappel sous 48h.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-10">
+              <a
+                href="/signup"
+                className="btn group bg-linear-to-t from-blue-600 to-blue-500 text-white shadow-sm"
+              >
+                <span className="relative inline-flex items-center">
+                  Commencer{" "}
+                  <span className="ml-1 tracking-normal text-blue-300 transition-transform group-hover:translate-x-0.5">
+                    -&gt;
+                  </span>
+                </span>
+              </a>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* AVIS */}
+      <section>
+        <Container>
+          <div className="py-16">
+            <div className="max-w-3xl pb-10 md:pb-12">
+              <h2 className="h2">Avis</h2>
+              <p className="mt-4 text-lg text-gray-700">
+                Ce que les utilisateurs apprécient : simplicité, clarté, régularité.
+              </p>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              {[
+                { n: "Sarah", t: "Je ne me prends plus la tête. Je suis le plan, c’est clair." },
+                { n: "Mehdi", t: "Les courses selon mon budget, ça change tout." },
+                { n: "Camille", t: "Le suivi me relance au bon moment. Je reste régulière." },
+              ].map((x) => (
+                <div key={x.n} className="rounded-2xl border bg-white p-6 shadow-sm">
+                  <div className="text-sm font-semibold text-gray-900">{x.n}</div>
+                  <div className="mt-2 text-sm text-gray-600">★★★★★</div>
+                  <div className="mt-4 text-sm text-gray-700">“{x.t}”</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* AVANT / APRÈS */}
+      <section>
+        <Container>
+          <div className="py-16">
+            <div className="max-w-3xl pb-10 md:pb-12">
+              <h2 className="h2">Avant / Après</h2>
+              <p className="mt-4 text-lg text-gray-700">
+                Des résultats visibles et durables (à remplacer par vos transformations clients).
+              </p>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden border bg-white shadow-sm">
+              <div className="relative h-[420px]">
+                <Image
+                  src="/jr/beforeafter.jpg"
+                  alt="Avant / Après"
+                  fill
+                  className="object-cover"
+                  sizes="100vw"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+              </div>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* RECETTES */}
+      <section>
+        <Container>
+          <div className="py-16">
+            <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+              <div>
+                <h2 className="h2">Recettes diététiques XXL</h2>
+                <p className="mt-4 text-lg text-gray-700">
+                  Le plus grand choix de recettes diététiques, y compris des recettes internationales,
+                  adaptées à votre profil et à votre budget.
+                </p>
+                <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                  <a
+                    href="/signup"
+                    className="btn group w-full sm:w-auto bg-linear-to-t from-blue-600 to-blue-500 text-white shadow-sm"
+                  >
+                    <span className="relative inline-flex items-center">
+                      Commencer{" "}
+                      <span className="ml-1 tracking-normal text-blue-300 transition-transform group-hover:translate-x-0.5">
+                        -&gt;
+                      </span>
+                    </span>
+                  </a>
+                  <a
+                    href="/blog"
+                    className="btn w-full sm:w-auto bg-white text-gray-900 shadow-sm hover:bg-gray-50"
+                  >
+                    Voir le blog
+                  </a>
+                </div>
+              </div>
+
+              <div className="rounded-2xl overflow-hidden border bg-white shadow-sm">
+                <div className="relative h-[420px]">
+                  <Image
+                    src="/jr/recipes.jpg"
+                    alt="Recettes"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width:1024px) 100vw, 50vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* CTA FINAL */}
+      <section className="pb-20">
+        <Container>
+          <div className="rounded-2xl bg-gray-900 px-8 py-12 text-white">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <div className="text-2xl font-bold">Prêt à démarrer ?</div>
+                <div className="mt-2 text-white/80">
+                  Créez votre compte et lancez votre accompagnement.
+                </div>
+              </div>
+              <a
+                href="/signup"
+                className="btn group w-full md:w-auto bg-linear-to-t from-blue-600 to-blue-500 text-white shadow-sm"
+              >
+                <span className="relative inline-flex items-center">
+                  Commencer{" "}
+                  <span className="ml-1 tracking-normal text-blue-300 transition-transform group-hover:translate-x-0.5">
+                    -&gt;
+                  </span>
+                </span>
+              </a>
+            </div>
+          </div>
+        </Container>
+      </section>
+    </div>
+  );
+}

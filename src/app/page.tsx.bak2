@@ -1,0 +1,302 @@
+export const metadata = {
+  title: "JeRegime",
+  description:
+    "Accompagnement diététique : repas adaptés, courses selon budget, recettes diététiques, Suivi + RDV diététicien sous 48h.",
+};
+
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+
+function Container({ children }: { children: React.ReactNode }) {
+  return <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">{children}</div>;
+}
+
+export default function Home() {
+  return (
+    <div className="bg-white text-zinc-950">
+      {/* HERO */}
+      <section className="relative overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0">
+          <Image
+            src="/jr/hero.jpg"
+            alt="JeRegime"
+            fill
+            priority
+            className="object-cover"
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/35" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.18),transparent_45%)]" />
+        </div>
+
+        <Container>
+          <div className="relative py-16 sm:py-20 md:py-28">
+            <div className="h-[70vh] sm:h-[80vh]" />
+
+              <div className="mt-7 flex flex-wrap gap-2 text-xs sm:text-sm text-white">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-black/55 backdrop-blur-md px-3 py-1.5">✅ Coach diététique inclus</span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-black/55 backdrop-blur-md px-3 py-1.5">⚡ RDV sous 48h</span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-black/55 backdrop-blur-md px-3 py-1.5">🍽️ Selon vos goûts</span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-black/55 backdrop-blur-md px-3 py-1.5">💶 Selon votre budget</span>
+              </div>
+
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-white">
+                <div className="rounded-xl border border-white/40 bg-black/55 backdrop-blur-md px-4 py-3">
+                  <div className="font-medium text-white">Adapté à vos goûts</div>
+                  <div className="text-white/90">Ce que vous aimez manger</div>
+                </div>
+                <div className="rounded-xl border border-white/40 bg-black/55 backdrop-blur-md px-4 py-3">
+                  <div className="font-medium text-white">Adapté à votre budget</div>
+                  <div className="text-white/90">Courses réalistes, sans prise de tête</div>
+                </div>
+                <div className="rounded-xl border border-white/40 bg-black/55 backdrop-blur-md px-4 py-3">
+                  <div className="font-medium text-white">Coach diététique</div>
+                  <div className="text-white/90">Suivi + RDV diététicien</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section id="comment-ca-marche" className="py-14 sm:py-16">
+        <Container>
+          <div className="max-w-2xl">
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+              Comment ça marche
+            </h2>
+            <p className="mt-3 text-zinc-600">
+              3 étapes simples : vous répondez, on s’adapte, vous avancez avec un coach.
+            </p>
+          </div>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {[ 
+              {
+                k: "1",
+                h: "Votre profil",
+                p: "Goûts, budget, contraintes, rythme. Vous répondez une fois.",
+              },
+              {
+                k: "2",
+                h: "Plan + courses",
+                p: "Menus + liste de courses adaptés à vous, ajustables à tout moment.",
+              },
+              {
+                k: "3",
+                h: "Suivi coach",
+                p: "Coaching + RDV diététicien. On ajuste quand vous en avez besoin.",
+              },
+            ].map((x) => (
+              <Card
+                key={x.k}
+                className="rounded-2xl border-zinc-200 bg-zinc-50/60 shadow-none transition hover:-translate-y-0.5 hover:bg-zinc-50"
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-sm font-semibold text-zinc-900">
+                      {x.k}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-base font-semibold tracking-tight text-zinc-900">{x.h}</div>
+                      <p className="mt-1.5 text-sm leading-relaxed text-zinc-600">{x.p}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="mt-12 max-w-2xl">
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+              Le cœur de JeRegime
+            </h2>
+            <p className="mt-3 text-zinc-600">
+              Simple. Structuré. Vous avancez avec un plan, pas avec des calculs.
+            </p>
+          </div>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <Card className="rounded-2xl">
+              <div className="relative h-44 overflow-hidden rounded-t-2xl">
+                <Image
+                  src="/jr/meals.jpg"
+                  alt="Repas"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width:1024px) 100vw, 33vw"
+                />
+              </div>
+              <CardContent className="p-6">
+                <div className="font-semibold">Repas adaptés</div>
+                <p className="mt-2 text-sm text-zinc-600">
+                  Menus simples, diététiques, compatibles avec tes contraintes.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl">
+              <div className="relative h-44 overflow-hidden rounded-t-2xl">
+                <Image
+                  src="/jr/groceries.jpg"
+                  alt="Courses"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width:1024px) 100vw, 33vw"
+                />
+              </div>
+              <CardContent className="p-6">
+                <div className="font-semibold">Courses selon budget</div>
+                <p className="mt-2 text-sm text-zinc-600">
+                  Liste optimisée, anti-gaspillage, adaptée à ton budget.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl">
+              <div className="relative h-44 overflow-hidden rounded-t-2xl">
+                <Image
+                  src="/jr/dietitian.jpg"
+                  alt="Diététicien"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width:1024px) 100vw, 33vw"
+                />
+              </div>
+              <CardContent className="p-6">
+                <div className="font-semibold">Suivi + RDV diététicien</div>
+                <p className="mt-2 text-sm text-zinc-600">
+                  Visio ou téléphone, planification simple, suivi régulier.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-10">
+            <Button asChild size="lg">
+              <a href="/signup">Commencer</a>
+            </Button>
+          </div>
+        </Container>
+      </section>
+
+      <Separator />
+
+      {/* SOCIAL PROOF */}
+      <section className="py-14 sm:py-16">
+        <Container>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-2xl">
+              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">Avis</h2>
+              <p className="mt-3 text-zinc-600">
+                Des avis courts, lisibles et crédibles (style Google).
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-0.5" aria-hidden>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <svg key={i} viewBox="0 0 24 24" className="h-5 w-5 fill-yellow-400">
+                    <path d="M12 17.3l6.18 3.7-1.64-7.03L21.5 9.24l-7.19-.61L12 2 9.69 8.63l-7.19.61 4.96 4.73L5.82 21z" />
+                  </svg>
+                ))}
+              </div>
+              <div className="text-sm leading-tight">
+                <div className="font-semibold">4,9/5</div>
+                <div className="text-zinc-500">Basé sur 1 248 avis</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {[
+              {
+                n: "Sarah M.",
+                d: "il y a 3 jours",
+                t: "Adapté à mes goûts et mon budget",
+                b: "Je mange ce que j’aime, mais mieux. La liste de courses est réaliste et je tiens enfin.",
+                img: "/jr/groceries.jpg",
+              },
+              {
+                n: "Mehdi A.",
+                d: "il y a 1 semaine",
+                t: "Cadre clair + suivi coach",
+                b: "On ajuste vite quand je bloque. C’est structuré et motivant, sans culpabiliser.",
+                img: "/jr/dietitian.jpg",
+              },
+              {
+                n: "Camille R.",
+                d: "il y a 2 semaines",
+                t: "Simple au quotidien",
+                b: "Pas de calculs. Je suis le plan, et les rappels arrivent au bon moment. Très efficace.",
+                img: "/jr/meals.jpg",
+              },
+            ].map((x) => (
+              <Card key={x.n} className="rounded-2xl">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="relative h-11 w-11 overflow-hidden rounded-full border bg-zinc-100">
+                      <Image src={x.img} alt={x.n} fill className="object-cover" sizes="44px" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold truncate">{x.n}</div>
+                          <div className="mt-0.5 text-xs text-zinc-500">{x.d}</div>
+                        </div>
+                        <span className="shrink-0 text-xs font-medium text-emerald-600">Avis validé</span>
+                      </div>
+
+                      <div className="mt-2 flex items-center gap-0.5" aria-hidden>
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <svg key={i} viewBox="0 0 24 24" className="h-4 w-4 fill-yellow-400">
+                            <path d="M12 17.3l6.18 3.7-1.64-7.03L21.5 9.24l-7.19-.61L12 2 9.69 8.63l-7.19.61 4.96 4.73L5.82 21z" />
+                          </svg>
+                        ))}
+                      </div>
+
+                      <div className="mt-3 text-sm font-semibold">{x.t}</div>
+                      <p className="mt-2 text-sm text-zinc-700 leading-relaxed">{x.b}</p>
+
+                      <div className="mt-4 text-xs text-zinc-500">Google • Recommandé</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      {/* CTA */}
+      <section className="pb-16">
+        <Container>
+          <div className="rounded-3xl border bg-zinc-50 p-8 sm:p-10">
+            <div className="max-w-2xl">
+              <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+                Prêt à commencer ?
+              </h3>
+              <p className="mt-3 text-zinc-600">
+                Tu crées ton compte, tu réponds aux questions, et on te prépare ton plan.
+              </p>
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                <Button asChild size="lg">
+                  <a href="/signup">Créer mon compte</a>
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <a href="/contact">Parler à quelqu’un</a>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Container>
+      </section>
+    </div>
+  );
+}
