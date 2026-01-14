@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temp / backups (project)
+public/jr/_backup/
+src/app/*.bak*
+src/app/*.broken
+src/app/*.before-*
