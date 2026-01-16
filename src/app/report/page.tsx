@@ -10,25 +10,33 @@ type Profile = {
   first_name: string | null;
   age: number | null;
   sex: string | null;
+
   height_cm: number | null;
   weight_kg: number | null;
   target_weight_kg: number | null;
+
   goal_primary: string | null;
   activity_level: string | null;
   work_type: string | null;
   eating_out_freq: string | null;
+
   diet_type: string | null;
+  diet_tags: string[] | null;
   allergies: string[] | null;
   meal_style: string[] | null;
+
   cooking_level: string | null;
   cook_time: string | null;
   grocery_budget: string | null;
   kitchen_tools: string[] | null;
+
   sleep_bedtime: string | null;
   sleep_wakeup: string | null;
   sleep_quality: string | null;
+
   alcohol_freq: string | null;
   smoking_status: string | null;
+
   onboarding_completed: boolean | null;
 };
 
@@ -56,9 +64,7 @@ type ReportJsonV1 = {
     bmi: number | null;
     bmi_category: string | null;
   };
-  goals: {
-    goal_primary: string | null;
-  };
+  goals: { goal_primary: string | null };
   lifestyle: {
     activity_level: string | null;
     work_type: string | null;
@@ -71,6 +77,7 @@ type ReportJsonV1 = {
   };
   nutrition: {
     diet_type: string | null;
+    diet_tags: string[] | null;
     allergies: string[] | null;
     meal_style: string[] | null;
     cooking_level: string | null;
@@ -120,100 +127,13 @@ export default function ReportPage() {
   const [checkingExisting, setCheckingExisting] = useState(true);
 
   const [saving, setSaving] = useState(false);
-  const [saveOk, setSaveOk] = useState<string | null>(null);
-
   const [error, setError] = useState<string | null>(null);
 
   const [profile, setProfile] = useState<Profile | null>(null);
+
+  // Rapport sauvegardé (stable)
   const [existingRow, setExistingRow] = useState<ReportRow | null>(null);
-  const [report, setReport] = useState<ReportJsonV1 | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function run() {
-      setLoading(true);
-      setError(null);
-
-      const status = await getOnboardingStatus();
-      if (cancelled) return;
-
-      if (status.status === "no_user") {
-        router.replace("/login");
-        return;
-      }
-
-      if (status.status === "in_progress") {
-        router.replace(`/onboarding/step-${status.step}`);
-        return;
-      }
-
-      // status === "done"
-      const { data: userRes } = await supabase.auth.getUser();
-      const user = userRes?.user;
-
-      // Debug utile (visible dans console navigateur)
-      console.log("[/report] user from supabase.auth.getUser()", user ? { id: user.id, email: user.email } : null);
-
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      const { data, error: profErr } = await supabase
-        .from("jr_user_profile")
-        .select(
-          [
-            "first_name",
-            "age",
-            "sex",
-            "height_cm",
-            "weight_kg",
-            "target_weight_kg",
-            "goal_primary",
-            "activity_level",
-            "work_type",
-            "eating_out_freq",
-            "diet_type",
-            "allergies",
-            "meal_style",
-            "cooking_level",
-            "cook_time",
-            "grocery_budget",
-            "kitchen_tools",
-            "sleep_bedtime",
-            "sleep_wakeup",
-            "sleep_quality",
-            "alcohol_freq",
-            "smoking_status",
-            "onboarding_completed",
-          ].join(",")
-        )
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (profErr || !data) {
-        console.log("[/report] profile load error", profErr);
-        setError("Impossible de charger ton profil. Réessaie dans quelques secondes.");
-        setLoading(false);
-        return;
-      }
-
-      if (!data.onboarding_completed) {
-        router.replace("/onboarding");
-        return;
-      }
-
-      setProfile(data as Profile);
-      setLoading(false);
-    }
-
-    run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+  const [savedReport, setSavedReport] = useState<ReportJsonV1 | null>(null);
 
   const computedReport = useMemo<ReportJsonV1 | null>(() => {
     if (!profile) return null;
@@ -226,7 +146,6 @@ export default function ReportPage() {
     const cat = bmi != null ? bmiCategory(bmi) : null;
 
     const bullets: string[] = [];
-
     if (bmi != null && cat) bullets.push(`IMC estimé : ${bmi} — ${cat}.`);
     if (profile.goal_primary) bullets.push(`Objectif principal : ${profile.goal_primary}.`);
     if (profile.activity_level) bullets.push(`Niveau d’activité : ${profile.activity_level}.`);
@@ -252,9 +171,7 @@ export default function ReportPage() {
         bmi,
         bmi_category: cat,
       },
-      goals: {
-        goal_primary: profile.goal_primary ?? null,
-      },
+      goals: { goal_primary: profile.goal_primary ?? null },
       lifestyle: {
         activity_level: profile.activity_level ?? null,
         work_type: profile.work_type ?? null,
@@ -267,6 +184,7 @@ export default function ReportPage() {
       },
       nutrition: {
         diet_type: profile.diet_type ?? null,
+        diet_tags: Array.isArray(profile.diet_tags) ? profile.diet_tags : null,
         allergies: profile.allergies ?? null,
         meal_style: profile.meal_style ?? null,
         cooking_level: profile.cooking_level ?? null,
@@ -282,7 +200,87 @@ export default function ReportPage() {
     };
   }, [profile]);
 
-  // Charger un rapport existant en DB (si présent)
+  useEffect(() => {
+    let cancelled = false;
+
+    async function run() {
+      setLoading(true);
+      setError(null);
+
+      const status = await getOnboardingStatus();
+      if (cancelled) return;
+
+      if (status.status === "no_user") {
+        router.replace("/login");
+        return;
+      }
+      if (status.status === "in_progress") {
+        router.replace(`/onboarding/step-${status.step}`);
+        return;
+      }
+
+      const { data: userRes } = await supabase.auth.getUser();
+      const user = userRes?.user;
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
+
+      const { data, error: profErr } = await supabase
+        .from("jr_user_profile")
+        .select(
+          [
+            "first_name",
+            "age",
+            "sex",
+            "height_cm",
+            "weight_kg",
+            "target_weight_kg",
+            "goal_primary",
+            "activity_level",
+            "work_type",
+            "eating_out_freq",
+            "diet_type",
+            "diet_tags",
+            "allergies",
+            "meal_style",
+            "cooking_level",
+            "cook_time",
+            "grocery_budget",
+            "kitchen_tools",
+            "sleep_bedtime",
+            "sleep_wakeup",
+            "sleep_quality",
+            "alcohol_freq",
+            "smoking_status",
+            "onboarding_completed",
+          ].join(",")
+        )
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (profErr || !data) {
+        setError("Impossible de charger ton profil. Réessaie dans quelques secondes.");
+        setLoading(false);
+        return;
+      }
+
+      if (!data.onboarding_completed) {
+        router.replace("/onboarding");
+        return;
+      }
+
+      setProfile(data as Profile);
+      setLoading(false);
+    }
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -308,19 +306,18 @@ export default function ReportPage() {
       if (cancelled) return;
 
       if (rErr) {
-        console.log("[/report] existing report load error", rErr);
-        // pas bloquant: on peut quand même générer
         setExistingRow(null);
+        setSavedReport(null);
         setCheckingExisting(false);
         return;
       }
 
       if (data && isReportJsonV1((data as any).report_json)) {
         setExistingRow(data as ReportRow);
-        setReport((data as any).report_json as ReportJsonV1);
+        setSavedReport((data as any).report_json as ReportJsonV1);
       } else {
         setExistingRow(null);
-        setReport(null);
+        setSavedReport(null);
       }
 
       setCheckingExisting(false);
@@ -333,18 +330,14 @@ export default function ReportPage() {
     };
   }, [profile, router]);
 
-  async function saveReportNow() {
+  async function regenerateAndSave() {
     if (!computedReport) return;
 
     setSaving(true);
-    setSaveOk(null);
     setError(null);
 
     const { data: userRes } = await supabase.auth.getUser();
     const user = userRes?.user;
-
-    console.log("[/report] saveReportNow user", user ? { id: user.id, email: user.email } : null);
-
     if (!user) {
       router.replace("/login");
       return;
@@ -363,22 +356,16 @@ export default function ReportPage() {
       .maybeSingle();
 
     if (upsertErr) {
-      console.log("[/report] upsert error", upsertErr);
-      setError(
-        "Impossible de sauvegarder ton rapport (sécurité/RLS). " +
-          "Vérifie que tu es bien connecté et réessaie."
-      );
+      setError("Impossible de sauvegarder ton rapport. Réessaie.");
       setSaving(false);
       return;
     }
 
     if (data && isReportJsonV1((data as any).report_json)) {
       setExistingRow(data as ReportRow);
-      setReport((data as any).report_json as ReportJsonV1);
-      setSaveOk("Rapport sauvegardé.");
+      setSavedReport((data as any).report_json as ReportJsonV1);
     } else {
-      setReport(computedReport);
-      setSaveOk("Rapport généré (sauvegarde confirmée).");
+      setSavedReport(computedReport);
     }
 
     setSaving(false);
@@ -411,7 +398,7 @@ export default function ReportPage() {
               href="/dashboard"
               className="rounded-xl border border-gray-300 px-5 py-3 text-sm font-medium"
             >
-              Retour dashboard
+              Aller au dashboard
             </Link>
           </div>
         </div>
@@ -419,48 +406,51 @@ export default function ReportPage() {
     );
   }
 
-  const r = report ?? computedReport;
+  const displayed = savedReport ?? computedReport;
+  const isPreview = !savedReport;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-2">
           <p className="text-xs font-medium tracking-wide text-gray-500">JE RÉGIME · RAPPORT PERSONNALISÉ</p>
+
           <h1 className="text-2xl font-semibold">
-            {r?.identity.first_name ? `Rapport de ${r.identity.first_name}` : "Ton rapport personnalisé"}
+            {displayed?.identity.first_name ? `Rapport de ${displayed.identity.first_name}` : "Ton rapport personnalisé"}
           </h1>
-          <p className="text-sm text-gray-600">
-            Version V1 ·{" "}
-            {r
-              ? `Généré le ${new Date(r.generated_at).toLocaleString("fr-FR", {
-                  dateStyle: "long",
-                  timeStyle: "short",
-                })}`
-              : "—"}
-          </p>
 
           {checkingExisting ? (
             <p className="text-xs text-gray-500">Vérification du rapport existant…</p>
           ) : existingRow ? (
             <p className="text-xs text-gray-500">
-              Rapport déjà présent en base (maj:{" "}
+              Rapport sauvegardé (maj:{" "}
               {new Date(existingRow.updated_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })})
             </p>
           ) : (
             <p className="text-xs text-gray-500">Aucun rapport sauvegardé pour l’instant.</p>
           )}
+
+          {isPreview ? (
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm text-amber-900 font-medium">Aperçu (non sauvegardé)</p>
+              <p className="text-sm text-amber-800 mt-1">
+                Ton profil a changé. Clique sur <span className="font-medium">“Régénérer & sauvegarder”</span> pour
+                enregistrer une nouvelle version du rapport.
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-6 grid gap-4">
           <section className="rounded-2xl border border-gray-200 p-5">
             <h2 className="text-base font-semibold">Synthèse</h2>
-            <p className="mt-2 text-sm text-gray-700">{r?.summary.title}</p>
+            <p className="mt-2 text-sm text-gray-700">{displayed?.summary.title}</p>
             <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-gray-700">
-              {(r?.summary.bullets ?? []).map((b, i) => (
+              {(displayed?.summary.bullets ?? []).map((b, i) => (
                 <li key={i}>{b}</li>
               ))}
             </ul>
-            <p className="mt-4 text-sm text-gray-600">{r?.summary.note}</p>
+            <p className="mt-4 text-sm text-gray-600">{displayed?.summary.note}</p>
           </section>
 
           <section className="rounded-2xl border border-gray-200 p-5">
@@ -469,25 +459,27 @@ export default function ReportPage() {
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-500">Taille</p>
                 <p className="mt-1 text-sm font-semibold">
-                  {r?.metrics.height_cm != null ? `${r.metrics.height_cm} cm` : "—"}
+                  {displayed?.metrics.height_cm != null ? `${displayed.metrics.height_cm} cm` : "—"}
                 </p>
               </div>
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-500">Poids</p>
                 <p className="mt-1 text-sm font-semibold">
-                  {r?.metrics.weight_kg != null ? `${r.metrics.weight_kg} kg` : "—"}
+                  {displayed?.metrics.weight_kg != null ? `${displayed.metrics.weight_kg} kg` : "—"}
                 </p>
               </div>
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-500">Objectif</p>
                 <p className="mt-1 text-sm font-semibold">
-                  {r?.metrics.target_weight_kg != null ? `${r.metrics.target_weight_kg} kg` : "—"}
+                  {displayed?.metrics.target_weight_kg != null ? `${displayed.metrics.target_weight_kg} kg` : "—"}
                 </p>
               </div>
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-500">IMC</p>
                 <p className="mt-1 text-sm font-semibold">
-                  {r?.metrics.bmi != null ? `${r.metrics.bmi} (${r.metrics.bmi_category})` : "—"}
+                  {displayed?.metrics.bmi != null
+                    ? `${displayed.metrics.bmi} (${displayed.metrics.bmi_category})`
+                    : "—"}
                 </p>
               </div>
             </div>
@@ -498,32 +490,32 @@ export default function ReportPage() {
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-500">Activité</p>
-                <p className="mt-1 text-sm font-semibold">{r?.lifestyle.activity_level ?? "—"}</p>
+                <p className="mt-1 text-sm font-semibold">{displayed?.lifestyle.activity_level ?? "—"}</p>
               </div>
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-500">Travail</p>
-                <p className="mt-1 text-sm font-semibold">{r?.lifestyle.work_type ?? "—"}</p>
+                <p className="mt-1 text-sm font-semibold">{displayed?.lifestyle.work_type ?? "—"}</p>
               </div>
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-500">Repas extérieur</p>
-                <p className="mt-1 text-sm font-semibold">{r?.lifestyle.eating_out_freq ?? "—"}</p>
+                <p className="mt-1 text-sm font-semibold">{displayed?.lifestyle.eating_out_freq ?? "—"}</p>
               </div>
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-500">Sommeil</p>
                 <p className="mt-1 text-sm font-semibold">
-                  {r?.lifestyle.sleep_bedtime && r?.lifestyle.sleep_wakeup
-                    ? `${r.lifestyle.sleep_bedtime} → ${r.lifestyle.sleep_wakeup}`
+                  {displayed?.lifestyle.sleep_bedtime && displayed?.lifestyle.sleep_wakeup
+                    ? `${displayed.lifestyle.sleep_bedtime} → ${displayed.lifestyle.sleep_wakeup}`
                     : "—"}
                 </p>
-                <p className="mt-1 text-xs text-gray-600">Qualité : {r?.lifestyle.sleep_quality ?? "—"}</p>
+                <p className="mt-1 text-xs text-gray-600">Qualité : {displayed?.lifestyle.sleep_quality ?? "—"}</p>
               </div>
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-500">Alcool</p>
-                <p className="mt-1 text-sm font-semibold">{r?.lifestyle.alcohol_freq ?? "—"}</p>
+                <p className="mt-1 text-sm font-semibold">{displayed?.lifestyle.alcohol_freq ?? "—"}</p>
               </div>
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-500">Tabac</p>
-                <p className="mt-1 text-sm font-semibold">{r?.lifestyle.smoking_status ?? "—"}</p>
+                <p className="mt-1 text-sm font-semibold">{displayed?.lifestyle.smoking_status ?? "—"}</p>
               </div>
             </div>
           </section>
@@ -533,32 +525,40 @@ export default function ReportPage() {
             <div className="mt-3 grid grid-cols-1 gap-3">
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-500">Type d’alimentation</p>
-                <p className="mt-1 text-sm font-semibold">{r?.nutrition.diet_type ?? "—"}</p>
+                <p className="mt-1 text-sm font-semibold">{displayed?.nutrition.diet_type ?? "—"}</p>
               </div>
+
+              <div className="rounded-xl bg-gray-50 p-4">
+                <p className="text-xs font-medium text-gray-500">Contraintes / préférences</p>
+                <p className="mt-1 text-sm font-semibold">{safeJoin(displayed?.nutrition.diet_tags ?? null)}</p>
+              </div>
+
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-500">Allergies</p>
-                <p className="mt-1 text-sm font-semibold">{safeJoin(r?.nutrition.allergies)}</p>
+                <p className="mt-1 text-sm font-semibold">{safeJoin(displayed?.nutrition.allergies)}</p>
               </div>
+
               <div className="rounded-xl bg-gray-50 p-4">
                 <p className="text-xs font-medium text-gray-500">Style de repas</p>
-                <p className="mt-1 text-sm font-semibold">{safeJoin(r?.nutrition.meal_style)}</p>
+                <p className="mt-1 text-sm font-semibold">{safeJoin(displayed?.nutrition.meal_style)}</p>
               </div>
+
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="rounded-xl bg-gray-50 p-4">
                   <p className="text-xs font-medium text-gray-500">Niveau cuisine</p>
-                  <p className="mt-1 text-sm font-semibold">{r?.nutrition.cooking_level ?? "—"}</p>
+                  <p className="mt-1 text-sm font-semibold">{displayed?.nutrition.cooking_level ?? "—"}</p>
                 </div>
                 <div className="rounded-xl bg-gray-50 p-4">
                   <p className="text-xs font-medium text-gray-500">Temps cuisine</p>
-                  <p className="mt-1 text-sm font-semibold">{r?.nutrition.cook_time ?? "—"}</p>
+                  <p className="mt-1 text-sm font-semibold">{displayed?.nutrition.cook_time ?? "—"}</p>
                 </div>
                 <div className="rounded-xl bg-gray-50 p-4">
                   <p className="text-xs font-medium text-gray-500">Budget courses</p>
-                  <p className="mt-1 text-sm font-semibold">{r?.nutrition.grocery_budget ?? "—"}</p>
+                  <p className="mt-1 text-sm font-semibold">{displayed?.nutrition.grocery_budget ?? "—"}</p>
                 </div>
                 <div className="rounded-xl bg-gray-50 p-4">
                   <p className="text-xs font-medium text-gray-500">Matériel</p>
-                  <p className="mt-1 text-sm font-semibold">{safeJoin(r?.nutrition.kitchen_tools)}</p>
+                  <p className="mt-1 text-sm font-semibold">{safeJoin(displayed?.nutrition.kitchen_tools)}</p>
                 </div>
               </div>
             </div>
@@ -566,22 +566,31 @@ export default function ReportPage() {
         </div>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
-          <button
-            onClick={saveReportNow}
-            disabled={saving || !computedReport}
-            className="rounded-xl bg-black px-6 py-3 text-sm font-medium text-white disabled:opacity-60"
-          >
-            {saving ? "Sauvegarde…" : "Sauvegarder le rapport"}
-          </button>
+          {!savedReport ? (
+            <button
+              onClick={regenerateAndSave}
+              disabled={saving || !computedReport}
+              className="rounded-xl bg-black px-6 py-3 text-sm font-medium text-white disabled:opacity-60"
+            >
+              {saving ? "Sauvegarde…" : "Régénérer & sauvegarder"}
+            </button>
+          ) : (
+            <Link
+              href="/dashboard/profile"
+              className="rounded-xl bg-black px-6 py-3 text-sm font-medium text-white"
+            >
+              Modifier mes réponses
+            </Link>
+          )}
 
           <Link href="/dashboard" className="rounded-xl border border-gray-300 px-6 py-3 text-sm font-medium">
             Aller au dashboard
           </Link>
 
-          {saveOk ? <p className="text-sm text-green-700">{saveOk}</p> : null}
+          {savedReport ? <p className="text-sm text-green-700">Votre rapport est enregistré</p> : null}
 
           <p className="w-full text-xs text-gray-500">
-            Le rapport est stocké dans ta base et protégé par RLS (accès propriétaire uniquement).
+            Le rapport sauvegardé reste stable. Il ne change que lorsque tu cliques sur “Régénérer & sauvegarder”.
           </p>
         </div>
       </div>
