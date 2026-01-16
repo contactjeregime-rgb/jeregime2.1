@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -59,9 +60,33 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen px-6 py-16 bg-white">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold text-zinc-900">Dashboard</h1>
-        <p className="mt-3 text-zinc-600">OK ✅ (onboarding terminé)</p>
+      <div className="max-w-3xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-zinc-900">Dashboard</h1>
+          <p className="mt-3 text-zinc-600">
+            Ton profil est prêt. Tu peux consulter ton rapport ou modifier tes réponses.
+          </p>
+        </div>
+
+        <div className="grid gap-3">
+          <Link
+            href="/report"
+            className="w-full bg-black text-white py-4 rounded-lg text-center font-medium"
+          >
+            Consulter mon rapport
+          </Link>
+
+          <Link
+            href="/dashboard/profile"
+            className="w-full border border-zinc-300 py-4 rounded-lg text-center font-medium"
+          >
+            Modifier mes réponses
+          </Link>
+        </div>
+
+        <p className="text-xs text-zinc-500">
+          Toute modification met à jour ton profil. Tu peux ensuite régénérer ton rapport.
+        </p>
       </div>
     </main>
   );
