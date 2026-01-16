@@ -1,6 +1,7 @@
 import Image from "next/image";
 import BeforeAfterSlider from "@/components/jr/before-after-slider";
 import Link from "next/link";
+import SmartBilanLink from "@/components/jr/smart-bilan-link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,7 +37,7 @@ export default function Home() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Button asChild size="lg" className="bg-white text-zinc-900 hover:bg-zinc-100 text-base font-semibold shadow-lg px-8 py-6 rounded-full font-medium text-lg px-10 py-7">
-              <Link href="/onboarding">Faire mon bilan personnalisé →</Link>
+              <SmartBilanLink>Faire mon bilan personnalisé →</SmartBilanLink>
             </Button>
             <Button asChild variant="secondary" size="lg" className="bg-white/15 text-white font-medium hover:bg-white/25 text-base px-8 py-6 rounded-full font-medium backdrop-blur-sm text-lg px-10 py-7">
               <a href="#comment-ca-marche">Voir comment ça marche</a>
@@ -130,7 +131,7 @@ export default function Home() {
 
           <div className="mt-12 flex justify-center">
             <Button asChild size="lg" className="rounded-full text-base sm:text-lg px-8 sm:px-10 py-6 sm:py-7 font-semibold shadow-lg">
-              <Link href="/contact">Faire mon bilan personnalisé</Link>
+              <SmartBilanLink>Faire mon bilan personnalisé</SmartBilanLink>
             </Button>
           </div>
       </section>
@@ -355,7 +356,7 @@ export default function Home() {
 
           <div className="mt-12 text-center">
             <Button asChild size="lg" className="rounded-full text-base sm:text-lg px-8 sm:px-10 py-6 sm:py-7 font-semibold shadow-lg">
-              <Link href="/onboarding">Faire mon bilan personnalisé</Link>
+              <SmartBilanLink>Faire mon bilan personnalisé</SmartBilanLink>
             </Button>
             <p className="mt-4 text-sm text-zinc-500">Gratuit · Sans engagement · 3 minutes</p>
           </div>
@@ -377,7 +378,7 @@ export default function Home() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
             <Button asChild size="lg" className="bg-white text-zinc-900 hover:bg-zinc-100 text-base font-semibold shadow-lg px-8 py-6 rounded-full font-medium text-lg px-10 py-7">
-              <Link href="/onboarding">Faire mon bilan personnalisé</Link>
+              <SmartBilanLink>Faire mon bilan personnalisé</SmartBilanLink>
             </Button>
             <Button asChild variant="secondary" size="lg" className="bg-white/15 text-white font-medium hover:bg-white/25 text-base px-8 py-6 rounded-full font-medium text-lg px-10 py-7">
               <Link href="/contact">Nous contacter</Link>

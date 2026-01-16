@@ -1,0 +1,16 @@
+alter table public.jr_user_profile
+  alter column first_name drop not null,
+  alter column last_name drop not null,
+  alter column target_weight_kg drop not null,
+  alter column activity_level drop not null,
+  alter column work_type drop not null,
+  alter column eating_out_freq drop not null,
+  alter column grocery_budget drop not null,
+  alter column cook_time drop not null,
+  alter column cooking_level drop not null,
+  alter column sleep_bedtime drop not null,
+  alter column sleep_wakeup drop not null,
+  alter column sleep_quality drop not null,
+  alter column alcohol_freq drop not null,
+  alter column smoking_status drop not null,
+  alter column vaping_status drop not null;

@@ -45,3 +45,6 @@ public/jr/_backup/
 src/app/*.bak*
 src/app/*.broken
 src/app/*.before-*
+
+# Templates (repo imbriqué)
+_templates/cruip-landing/

@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Link from "next/link";
+import AuthHeaderButton from "@/components/jr/auth-header-button";
 
 export const metadata: Metadata = {
   title: "JeRegime",
@@ -31,12 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link href="/livre-blanc" className="hover:text-foreground">Livre blanc</Link>
                 <Link href="/reunions-information" className="hover:text-foreground">Réunions</Link>
                 <Link href="/contact" className="hover:text-foreground">Contact</Link>
-                <Link
-                  href="/signup"
-                  className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-2 text-primary-foreground font-medium hover:opacity-90"
-                >
-                  Commencer
-                </Link>
+                <AuthHeaderButton />
               </nav>
             </div>
           </header>
