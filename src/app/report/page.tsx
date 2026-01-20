@@ -44,7 +44,7 @@ type ReportRow = {
   id: string;
   user_id: string;
   report_version: number;
-  report_json: any;
+  report_json: unknown;
   created_at: string;
   updated_at: string;
 };
@@ -116,8 +116,10 @@ function safeJoin(arr: string[] | null | undefined) {
   return arr.join(", ");
 }
 
-function isReportJsonV1(v: any): v is ReportJsonV1 {
-  return v && typeof v === "object" && v.version === 1 && typeof v.generated_at === "string";
+function isReportJsonV1(v: unknown): v is ReportJsonV1 {
+  if (!v || typeof v !== "object") return false;
+  const o = v as Record<string, unknown>;
+  return o.version === 1 && typeof o.generated_at === "string";
 }
 
 export default function ReportPage() {
@@ -301,6 +303,7 @@ export default function ReportPage() {
         .from("jr_user_report")
         .select("id,user_id,report_version,report_json,created_at,updated_at")
         .eq("user_id", user.id)
+        .returns<ReportRow>()
         .maybeSingle();
 
       if (cancelled) return;
@@ -312,9 +315,9 @@ export default function ReportPage() {
         return;
       }
 
-      if (data && isReportJsonV1((data as any).report_json)) {
-        setExistingRow(data as ReportRow);
-        setSavedReport((data as any).report_json as ReportJsonV1);
+      if (data && isReportJsonV1(data.report_json)) {
+        setExistingRow(data);
+        setSavedReport(data.report_json);
       } else {
         setExistingRow(null);
         setSavedReport(null);
@@ -353,6 +356,7 @@ export default function ReportPage() {
       .from("jr_user_report")
       .upsert(payload, { onConflict: "user_id" })
       .select("id,user_id,report_version,report_json,created_at,updated_at")
+      .returns<ReportRow>()
       .maybeSingle();
 
     if (upsertErr) {
@@ -361,9 +365,9 @@ export default function ReportPage() {
       return;
     }
 
-    if (data && isReportJsonV1((data as any).report_json)) {
-      setExistingRow(data as ReportRow);
-      setSavedReport((data as any).report_json as ReportJsonV1);
+    if (data && isReportJsonV1(data.report_json)) {
+      setExistingRow(data);
+      setSavedReport(data.report_json);
     } else {
       setSavedReport(computedReport);
     }
