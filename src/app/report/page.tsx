@@ -8,6 +8,7 @@ import { getOnboardingStatus } from "@/lib/requireOnboarding";
 
 type Profile = {
   first_name: string | null;
+  last_name: string | null;
   age: number | null;
   sex: string | null;
 
@@ -36,6 +37,7 @@ type Profile = {
 
   alcohol_freq: string | null;
   smoking_status: string | null;
+  vaping_status: string | null;
 
   onboarding_completed: boolean | null;
 };
@@ -50,7 +52,7 @@ type ReportRow = {
 };
 
 type ReportJsonV1 = {
-  version: 1;
+  version: 1 | 2;
   generated_at: string;
   identity: {
     first_name: string | null;
@@ -74,6 +76,7 @@ type ReportJsonV1 = {
     sleep_quality: string | null;
     alcohol_freq: string | null;
     smoking_status: string | null;
+    vaping_status?: string | null;
   };
   nutrition: {
     diet_type: string | null;
@@ -85,12 +88,59 @@ type ReportJsonV1 = {
     grocery_budget: string | null;
     kitchen_tools: string[] | null;
   };
-  summary: {
+  onboarding_snapshot?: unknown;
+  suivi_quotidien?: unknown;
+      summary: {
     title: string;
     bullets: string[];
     note: string;
   };
 };
+
+type ReportJsonV2 = ReportJsonV1 & {
+  version: 2;
+  onboarding_snapshot: {
+    first_name: string | null;
+    last_name: string | null;
+    age: number | null;
+    sex: string | null;
+    height_cm: number | null;
+    weight_kg: number | null;
+    target_weight_kg: number | null;
+    goal_primary: string | null;
+    activity_level: string | null;
+    work_type: string | null;
+    eating_out_freq: string | null;
+    diet_type: string | null;
+    diet_tags: string[] | null;
+    allergies: string[] | null;
+    meal_style: string[] | null;
+    cooking_level: string | null;
+    cook_time: string | null;
+    grocery_budget: string | null;
+    kitchen_tools: string[] | null;
+    sleep_bedtime: string | null;
+    sleep_wakeup: string | null;
+    sleep_quality: string | null;
+    alcohol_freq: string | null;
+    smoking_status: string | null;
+    vaping_status: string | null;
+  };
+  suivi_quotidien: {
+    verdict: "recommended" | "optional";
+    why: string;
+    what_you_get: string[];
+    closing: string;
+  };
+};
+
+type ReportJson = ReportJsonV1 | ReportJsonV2;
+
+function isReportJsonV2(v: unknown): v is ReportJsonV2 {
+  if (!v || typeof v !== "object") return false;
+  const o = v as Record<string, unknown>;
+  return o.version === 2 && typeof o.generated_at === "string";
+}
 
 function round1(n: number) {
   return Math.round(n * 10) / 10;
@@ -135,9 +185,9 @@ export default function ReportPage() {
 
   // Rapport sauvegardé (stable)
   const [existingRow, setExistingRow] = useState<ReportRow | null>(null);
-  const [savedReport, setSavedReport] = useState<ReportJsonV1 | null>(null);
+  const [savedReport, setSavedReport] = useState<ReportJson | null>(null);
 
-  const computedReport = useMemo<ReportJsonV1 | null>(() => {
+  const computedReport = useMemo<ReportJsonV2 | null>(() => {
     if (!profile) return null;
 
     const h = profile.height_cm ?? null;
@@ -159,7 +209,7 @@ export default function ReportPage() {
       "Il ne remplace pas un avis médical, mais il pose un cadre clair, réaliste et personnalisable.";
 
     return {
-      version: 1,
+      version: 2,
       generated_at: new Date().toISOString(),
       identity: {
         first_name: profile.first_name ?? null,
@@ -183,6 +233,7 @@ export default function ReportPage() {
         sleep_quality: profile.sleep_quality ?? null,
         alcohol_freq: profile.alcohol_freq ?? null,
         smoking_status: profile.smoking_status ?? null,
+        vaping_status: profile.vaping_status ?? null,
       },
       nutrition: {
         diet_type: profile.diet_type ?? null,
@@ -194,8 +245,46 @@ export default function ReportPage() {
         grocery_budget: profile.grocery_budget ?? null,
         kitchen_tools: profile.kitchen_tools ?? null,
       },
+      onboarding_snapshot: {
+        first_name: profile.first_name ?? null,
+        last_name: profile.last_name ?? null,
+        age: profile.age ?? null,
+        sex: profile.sex ?? null,
+        height_cm: profile.height_cm ?? null,
+        weight_kg: profile.weight_kg ?? null,
+        target_weight_kg: profile.target_weight_kg ?? null,
+        goal_primary: profile.goal_primary ?? null,
+        activity_level: profile.activity_level ?? null,
+        work_type: profile.work_type ?? null,
+        eating_out_freq: profile.eating_out_freq ?? null,
+        diet_type: profile.diet_type ?? null,
+        diet_tags: Array.isArray(profile.diet_tags) ? profile.diet_tags : null,
+        allergies: profile.allergies ?? null,
+        meal_style: profile.meal_style ?? null,
+        cooking_level: profile.cooking_level ?? null,
+        cook_time: profile.cook_time ?? null,
+        grocery_budget: profile.grocery_budget ?? null,
+        kitchen_tools: profile.kitchen_tools ?? null,
+        sleep_bedtime: profile.sleep_bedtime ?? null,
+        sleep_wakeup: profile.sleep_wakeup ?? null,
+        sleep_quality: profile.sleep_quality ?? null,
+        alcohol_freq: profile.alcohol_freq ?? null,
+        smoking_status: profile.smoking_status ?? null,
+        vaping_status: profile.vaping_status ?? null,
+      },
+      suivi_quotidien: {
+        verdict: "recommended",
+        why: "Votre bilan met en evidence plusieurs leviers a piloter en parallele (alimentation, rythme, activite, habitudes). Sans cadre quotidien, on revient vite aux automatismes.",
+        what_you_get: [
+          "Un coach dans votre poche pour vous guider au quotidien",
+          "Aide immediate en cas de craquage (recentrage, alternatives, plan d action)",
+          "Idees concretes : quoi manger, quoi acheter, quoi cuisiner selon vos contraintes",
+          "Ajustements progressifs, realistes, et suivis dans la duree",
+        ],
+        closing: "Votre rapport a ete analyse et structure. La prochaine etape logique est un accompagnement nutritionnel quotidien JeRegime pour transformer ces recommandations en habitudes durables.",
+      },
       summary: {
-        title: "Synthèse de ton profil (V1)",
+        title: "Synthese de ton profil (V2)",
         bullets: bullets.length ? bullets : ["Profil chargé. Nous allons affiner les recommandations ensuite."],
         note,
       },
@@ -233,6 +322,7 @@ export default function ReportPage() {
         .select(
           [
             "first_name",
+            "last_name",
             "age",
             "sex",
             "height_cm",
@@ -255,6 +345,7 @@ export default function ReportPage() {
             "sleep_quality",
             "alcohol_freq",
             "smoking_status",
+            "vaping_status",
             "onboarding_completed",
           ].join(",")
         )
@@ -315,10 +406,10 @@ export default function ReportPage() {
         return;
       }
 
-      if (data && isReportJsonV1(data.report_json)) {
-        setExistingRow(data);
-        setSavedReport(data.report_json);
-      } else {
+      if (data && (isReportJsonV2(data.report_json) || isReportJsonV1(data.report_json))) {
+      setExistingRow(data);
+      setSavedReport(data.report_json as ReportJson);
+    } else {
         setExistingRow(null);
         setSavedReport(null);
       }
@@ -348,7 +439,7 @@ export default function ReportPage() {
 
     const payload = {
       user_id: user.id,
-      report_version: 1,
+      report_version: 2,
       report_json: computedReport,
     };
 
@@ -365,9 +456,9 @@ export default function ReportPage() {
       return;
     }
 
-    if (data && isReportJsonV1(data.report_json)) {
+    if (data && (isReportJsonV2(data.report_json) || isReportJsonV1(data.report_json))) {
       setExistingRow(data);
-      setSavedReport(data.report_json);
+      setSavedReport(data.report_json as ReportJson);
     } else {
       setSavedReport(computedReport);
     }
