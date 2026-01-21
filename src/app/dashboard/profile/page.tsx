@@ -181,7 +181,7 @@ const WEIGHT_OPTIONS = Array.from({ length: 300 - 30 + 1 }, (_, i) => {
 const TIME_OPTIONS = (() => {
   const out: Array<{ value: string; label: string }> = [];
   for (let h = 0; h < 24; h++) {
-    for (let m of [0, 30]) {
+    for (const m of [0, 30]) {
       const hh = String(h).padStart(2, "0");
       const mm = String(m).padStart(2, "0");
       const label = `${hh}:${mm}`;
@@ -252,7 +252,6 @@ export default function ProfileEditPage() {
   const [dietType, setDietType] = useState<string>("balanced");
   const [dietTags, setDietTags] = useState<string[]>([]);
   const [mealStyle, setMealStyle] = useState<string[]>([]);
-  const [allergies, setAllergies] = useState<string[]>([]); // on garde la feature allergies step-5, ici on ne modifie pas la liste (V1)
   const [cookingLevel, setCookingLevel] = useState<string>("beginner");
   const [groceryBudget, setGroceryBudget] = useState<string>("medium");
   const [cookTime, setCookTime] = useState<string>("20");
