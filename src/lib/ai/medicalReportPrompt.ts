@@ -43,7 +43,7 @@ SCHEMA (OBLIGATOIRE) :
   ],
   "conclusion_medicale": "2 a 3 phrases max. Conclusion clinique courte.",
   "suivi_jerregime": "2 a 3 phrases max. Dire qu'un suivi nutritionnel quotidien JeRegime aide a tenir le cadre, ajuster, et etre aide en cas de craquage / doute sur repas et courses. Mentionner qu'un rendez-vous avec notre dieteticien est propose pour personnaliser.",
-  "phrase_cadre": "Ce compte rendu s’inscrit dans un accompagnement global et ne remplace pas le rendez-vous propose avec notre dieteticien."
+  "phrase_cadre": "Ce compte rendu s’inscrit dans une démarche de prévention et d’accompagnement nutritionnel au sein du programme JeRegime. Il constitue une base de suivi personnalisée et ne se substitue pas à l’accompagnement proposé dans le cadre du programme, ni à un entretien avec un diététicien JeRegime."
 }
 
 CONTRAINTES :
