@@ -358,12 +358,12 @@ export default function ReportPage() {
         return;
       }
 
-      if (!data.onboarding_completed) {
+      if (!(data as unknown as Profile).onboarding_completed) {
         router.replace("/onboarding");
         return;
       }
 
-      setProfile(data as Profile);
+      setProfile(data as unknown as Profile);
       setLoading(false);
     }
 
@@ -406,10 +406,12 @@ export default function ReportPage() {
         return;
       }
 
-      if (data && (isReportJsonV2(data.report_json) || isReportJsonV1(data.report_json))) {
-      setExistingRow(data);
-      setSavedReport(data.report_json as ReportJson);
-    } else {
+      const row = (data as unknown as ReportRow | null);
+
+      if (row && (isReportJsonV2(row.report_json) || isReportJsonV1(row.report_json))) {
+        setExistingRow(row);
+        setSavedReport(row.report_json as ReportJson);
+      } else {
         setExistingRow(null);
         setSavedReport(null);
       }
@@ -456,9 +458,11 @@ export default function ReportPage() {
       return;
     }
 
-    if (data && (isReportJsonV2(data.report_json) || isReportJsonV1(data.report_json))) {
-      setExistingRow(data);
-      setSavedReport(data.report_json as ReportJson);
+    const row = (data as unknown as ReportRow | null);
+
+    if (row && (isReportJsonV2(row.report_json) || isReportJsonV1(row.report_json))) {
+      setExistingRow(row);
+      setSavedReport(row.report_json as ReportJson);
     } else {
       setSavedReport(computedReport);
     }

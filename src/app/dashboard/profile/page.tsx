@@ -251,6 +251,7 @@ export default function ProfileEditPage() {
 
   const [dietType, setDietType] = useState<string>("balanced");
   const [dietTags, setDietTags] = useState<string[]>([]);
+  const [allergies, setAllergies] = useState<string[]>([]);
   const [mealStyle, setMealStyle] = useState<string[]>([]);
   const [cookingLevel, setCookingLevel] = useState<string>("beginner");
   const [groceryBudget, setGroceryBudget] = useState<string>("medium");
@@ -316,12 +317,12 @@ export default function ProfileEditPage() {
 
       if (!alive) return;
 
-      if (error || !data?.onboarding_completed) {
+      if (error || !(data as ProfileRow | null)?.onboarding_completed) {
         router.replace("/onboarding/step-1");
         return;
       }
 
-      const p = data as ProfileRow;
+      const p = data as unknown as ProfileRow;
 
       if (p.age != null) setAge(String(p.age));
       if (p.sex) setSex(p.sex);
