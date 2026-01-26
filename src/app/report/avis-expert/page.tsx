@@ -5,6 +5,59 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
+type Bubble = { title?: string; text?: string; bullets?: string[] };
+
+type CoachOpinion = {
+  header?: { title?: string; generated_at?: string; version?: number };
+  salutation?: string;
+  context_and_professional?: string;
+
+  clinical_summary?: {
+    overall_view?: string;
+    bmi?: string;
+    activity_level?: string;
+    sleep_quality?: string;
+  };
+
+  clinical_factors?: {
+    favorable?: string[];
+    vigilance?: string[];
+  };
+
+  nutrition_analysis?: {
+    meal_organization?: string;
+    overall_quality?: string;
+    practical_constraints?: string;
+    coherence_with_goal?: string;
+  };
+
+  lifestyle_analysis?: {
+    physical_activity?: string;
+    daily_rhythm?: string;
+    sleep?: string;
+  };
+
+  priority_axes?: string[];
+  follow_up_recommendations?: string;
+  professional_conclusion?: string;
+  jr_frame?: string;
+};
+
+type OpinionGetOk = {
+  ok: true;
+  opinion_json: CoachOpinion;
+  created_at: string | null;
+};
+
+type OpinionPostOk = {
+  ok: true;
+  opinion_json: CoachOpinion;
+  opinionCreatedAt?: string | null;
+  created_at?: string | null;
+};
+
+type ApiErr = { error?: string; message?: string };
+
 function safeText(v: unknown): string | null {
   if (typeof v === "string" && v.trim()) return v.trim();
   return null;
@@ -22,7 +75,7 @@ export default function AvisExpertChatPage() {
   const [generating, setGenerating] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
-  const [coach, setCoach] = useState<any | null>(null);
+  const [coach, setCoach] = useState<CoachOpinion | null>(null);
   const [lastOpinionAt, setLastOpinionAt] = useState<string | null>(null);
 
   async function getAccessToken(): Promise<string | null> {
@@ -35,10 +88,12 @@ export default function AvisExpertChatPage() {
 
     const { data: sessionRes, error: sessionErr } = await supabase.auth.getSession();
     const token = sessionRes?.session?.access_token ?? null;
+
     if (sessionErr || !token) {
       setError("Session invalide. Reconnecte-toi.");
       return null;
     }
+
     return token;
   }
 
@@ -57,7 +112,8 @@ export default function AvisExpertChatPage() {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json().catch(() => ({}));
+
+      const data = (await res.json().catch(() => ({}))) as OpinionGetOk | ApiErr;
 
       if (!res.ok) {
         const msg = data?.error ?? "Erreur IA";
@@ -70,10 +126,12 @@ export default function AvisExpertChatPage() {
         throw new Error(msg);
       }
 
-      setCoach((data as any)?.opinion_json ?? null);
-      setLastOpinionAt((data as any)?.created_at ?? null);
-    } catch (e: any) {
-      setError(e?.message ?? "Erreur IA");
+      const ok = data as OpinionGetOk;
+      setCoach(ok.opinion_json ?? null);
+      setLastOpinionAt(ok.created_at ?? null);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Erreur IA";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -94,13 +152,19 @@ export default function AvisExpertChatPage() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json().catch(() => ({}));
+
+      const data = (await res.json().catch(() => ({}))) as OpinionPostOk | ApiErr;
+
       if (!res.ok) throw new Error(data?.error ?? "Erreur IA");
 
-      setCoach((data as any)?.opinion_json ?? null);
-      setLastOpinionAt((data as any)?.opinionCreatedAt ?? (data as any)?.created_at ?? null);
-    } catch (e: any) {
-      setError(e?.message ?? "Erreur IA");
+      const ok = data as OpinionPostOk;
+      setCoach(ok.opinion_json ?? null);
+
+      const ts = ok.opinionCreatedAt ?? ok.created_at ?? null;
+      setLastOpinionAt(ts);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Erreur IA";
+      setError(msg);
     } finally {
       setGenerating(false);
     }
@@ -111,58 +175,63 @@ export default function AvisExpertChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // NOTE: bubbles construction continues below (kept out to avoid accidental python insertion)
-  const bubbles2 = useMemo(() => {
+  const bubbles2 = useMemo<Bubble[]>(() => {
     if (!coach) return [];
-    const parts: { title?: string; text?: string; bullets?: string[] }[] = [];
+    const parts: Bubble[] = [];
 
-    const headerTitle = safeText(coach?.header?.title) ?? "Compte rendu – Avis du diététicien";
-    const headerDate = safeText(coach?.header?.generated_at);
+    const headerTitle = safeText(coach.header?.title) ?? "Compte rendu – Avis du diététicien";
+    const headerDate = safeText(coach.header?.generated_at);
     parts.push({ title: headerTitle, text: headerDate ? `Synthèse du ${headerDate}.` : "Synthèse du jour." });
 
-    const salutation = safeText(coach?.salutation);
+    const salutation = safeText(coach.salutation);
     if (salutation) parts.push({ text: salutation });
 
-    const context = safeText(coach?.context_and_professional);
+    const context = safeText(coach.context_and_professional);
     if (context) parts.push({ title: "Contexte", text: context });
 
-    const overall = safeText(coach?.clinical_summary?.overall_view);
-    const bmi = safeText(coach?.clinical_summary?.bmi);
-    const act = safeText(coach?.clinical_summary?.activity_level);
-    const sleep = safeText(coach?.clinical_summary?.sleep_quality);
+    const overall = safeText(coach.clinical_summary?.overall_view);
+    const bmi = safeText(coach.clinical_summary?.bmi);
+    const act = safeText(coach.clinical_summary?.activity_level);
+    const sleep = safeText(coach.clinical_summary?.sleep_quality);
+
     const quick = [bmi ? `IMC : ${bmi}` : null, act ? `Activité : ${act}` : null, sleep ? `Sommeil : ${sleep}` : null].filter(
-      Boolean
-    ) as string[];
+      (x): x is string => typeof x === "string" && x.length > 0
+    );
+
     if (overall || quick.length) parts.push({ title: "Synthèse clinique", text: overall ?? undefined, bullets: quick });
 
-    const fav = listify(coach?.clinical_factors?.favorable);
-    const vig = listify(coach?.clinical_factors?.vigilance);
+    const fav = listify(coach.clinical_factors?.favorable);
+    const vig = listify(coach.clinical_factors?.vigilance);
     if (fav.length) parts.push({ title: "Points favorables", bullets: fav });
     if (vig.length) parts.push({ title: "Points de vigilance", bullets: vig });
 
-    const nutOrg = safeText(coach?.nutrition_analysis?.meal_organization);
-    const nut = safeText(coach?.nutrition_analysis?.overall_quality);
-    const nutConstraints = safeText(coach?.nutrition_analysis?.practical_constraints);
-    const nutCoherence = safeText(coach?.nutrition_analysis?.coherence_with_goal);
-    const nutLines = [nutOrg, nut, nutConstraints, nutCoherence].filter(Boolean) as string[];
+    const nutOrg = safeText(coach.nutrition_analysis?.meal_organization);
+    const nut = safeText(coach.nutrition_analysis?.overall_quality);
+    const nutConstraints = safeText(coach.nutrition_analysis?.practical_constraints);
+    const nutCoherence = safeText(coach.nutrition_analysis?.coherence_with_goal);
+    const nutLines = [nutOrg, nut, nutConstraints, nutCoherence].filter(
+      (x): x is string => typeof x === "string" && x.length > 0
+    );
     if (nutLines.length) parts.push({ title: "Analyse nutritionnelle", bullets: nutLines });
 
-    const lifeAct = safeText(coach?.lifestyle_analysis?.physical_activity);
-    const lifeRhythm = safeText(coach?.lifestyle_analysis?.daily_rhythm);
-    const lifeSleep = safeText(coach?.lifestyle_analysis?.sleep);
-    const lifeLines = [lifeAct, lifeRhythm, lifeSleep].filter(Boolean) as string[];
+    const lifeAct = safeText(coach.lifestyle_analysis?.physical_activity);
+    const lifeRhythm = safeText(coach.lifestyle_analysis?.daily_rhythm);
+    const lifeSleep = safeText(coach.lifestyle_analysis?.sleep);
+    const lifeLines = [lifeAct, lifeRhythm, lifeSleep].filter(
+      (x): x is string => typeof x === "string" && x.length > 0
+    );
     if (lifeLines.length) parts.push({ title: "Analyse mode de vie", bullets: lifeLines });
 
-    const axes = listify(coach?.priority_axes);
+    const axes = listify(coach.priority_axes);
     if (axes.length) parts.push({ title: "Axes prioritaires", bullets: axes });
 
-    const reco = safeText(coach?.follow_up_recommendations);
+    const reco = safeText(coach.follow_up_recommendations);
     if (reco) parts.push({ title: "Recommandations", text: reco });
 
-    const concl = safeText(coach?.professional_conclusion);
+    const concl = safeText(coach.professional_conclusion);
     if (concl) parts.push({ title: "Conclusion", text: concl });
 
-    const frame = safeText(coach?.jr_frame);
+    const frame = safeText(coach.jr_frame);
     if (frame) parts.push({ text: frame });
 
     return parts;
@@ -176,17 +245,13 @@ export default function AvisExpertChatPage() {
             <p className="text-xs font-medium tracking-wide text-gray-500">JE RÉGIME · CABINET</p>
             <h1 className="mt-1 text-lg font-semibold">Avis du diététicien</h1>
             {lastOpinionAt ? (
-              <p className="mt-1 text-xs text-gray-500">
-                Dernier avis : {new Date(lastOpinionAt).toLocaleString("fr-FR")}
-              </p>
+              <p className="mt-1 text-xs text-gray-500">Dernier avis : {new Date(lastOpinionAt).toLocaleString("fr-FR")}</p>
             ) : (
               <p className="mt-1 text-xs text-gray-500">Aucun avis enregistré</p>
             )}
           </div>
-          <Link
-            href="/report"
-            className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50"
-          >
+
+          <Link href="/report" className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">
             ← Retour rapport
           </Link>
         </div>
@@ -217,9 +282,7 @@ export default function AvisExpertChatPage() {
               {!coach ? (
                 <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
                   <p className="text-sm font-medium text-gray-800">Aucun avis enregistré pour l’instant.</p>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Clique ci-dessous pour générer l’avis du diététicien à partir de ton rapport.
-                  </p>
+                  <p className="mt-1 text-sm text-gray-600">Clique ci-dessous pour générer l’avis du diététicien à partir de ton rapport.</p>
                   <button
                     type="button"
                     onClick={generateNewOpinion}
