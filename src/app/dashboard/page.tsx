@@ -77,6 +77,13 @@ export default function DashboardPage() {
           </Link>
 
           <Link
+            href="/report/avis-expert"
+            className="w-full border border-zinc-300 py-4 rounded-lg text-center font-medium"
+          >
+            Avis du diététicien
+          </Link>
+
+          <Link
             href="/dashboard/profile"
             className="w-full border border-zinc-300 py-4 rounded-lg text-center font-medium"
           >

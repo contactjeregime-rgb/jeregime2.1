@@ -51,14 +51,14 @@ export default function OnboardingSuccess() {
         <h1 className="text-3xl font-bold">🎉 Profil complété</h1>
         <p className="text-zinc-600">
           Ton profil JeRégime est prêt.
-          Nous pouvons maintenant générer ton rapport personnalisé (V1).
+          Nous pouvons maintenant obtenir l’avis du diététicien sur ton bilan.
         </p>
 
         <Link
-          href="/report"
+          href="/report/avis-expert"
           className="block w-full bg-black text-white py-4 rounded-lg font-medium"
         >
-          Générer mon rapport personnalisé
+          Avis du diététicien
         </Link>
 
         <Link

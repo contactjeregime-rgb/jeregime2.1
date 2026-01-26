@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { getOnboardingStatus } from "@/lib/requireOnboarding";
@@ -174,12 +174,15 @@ function isReportJsonV1(v: unknown): v is ReportJsonV1 {
 
 export default function ReportPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const autoSaveRef = useRef(false); // AUTO_SAVE_REF
 
   const [loading, setLoading] = useState(true);
   const [checkingExisting, setCheckingExisting] = useState(true);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
 
   const [profile, setProfile] = useState<Profile | null>(null);
 
@@ -470,6 +473,35 @@ export default function ReportPage() {
     setSaving(false);
   }
 
+  // AUTO_SAVE_REPORT: si on arrive avec ?autosave=1, on sauvegarde puis on redirige
+  useEffect(() => {
+    const autosave = searchParams?.get("autosave") === "1";
+    const next = searchParams?.get("next") || "/report";
+    if (!autosave) return;
+
+    // Déjà un rapport => on peut aller au next sans boucler
+    if (savedReport) {
+      router.replace(next);
+      return;
+    }
+
+    // Anti-boucle: si on a déjà tenté une autosave dans cette session de page
+    if (autoSaveRef.current) return;
+
+    // On attend que computedReport soit prêt
+    if (!computedReport) return;
+    if (saving) return;
+
+    autoSaveRef.current = true;
+
+    (async () => {
+      await regenerateAndSave();
+      router.replace(next);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, savedReport, saving, computedReport, router]);
+
+
   if (loading) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-10">
@@ -485,6 +517,7 @@ export default function ReportPage() {
       <main className="mx-auto max-w-3xl px-4 py-10">
         <div className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
           <h1 className="text-lg font-semibold">On a un problème</h1>
+
           <p className="mt-2 text-sm text-gray-700">{error}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <button
