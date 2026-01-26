@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI, { toFile } from "openai";
+import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 
 export const runtime = "nodejs";
 
-type JrProfileRow = { is_premium: boolean | null };
 type JrCreditsRow = { vision_credits: number | null };
 
 type ApiOk = {
@@ -50,25 +50,16 @@ export async function POST(req: Request) {
 
     const form = await req.formData();
     const image = form.get("image");
+    if (!(image instanceof File)) return jsonError("Missing image", 400);
 
-    if (!(image instanceof File)) {
-      return jsonError("Missing image", 400);
-    }
+    // Central premium rules
+    const ent = await getUserEntitlements(url, anonKey, accessToken);
+    const isPremium = ent.isPremium;
 
-    // Premium + crédits
-    const { data: profile, error: pErr } = await supabase
-      .from("jr_user_profile")
-      .select("is_premium")
-      .eq("user_id", u.user.id)
-      .maybeSingle<JrProfileRow>();
-
-    if (pErr) return jsonError("Failed to load profile", 500);
-
-    const isPremium = Boolean(profile?.is_premium);
-
+    // Credits gate for freemium
     let creditsLeft: number | null = null;
 
-    if (!isPremium) {
+    if (!ent.vision.unlimited) {
       const { data: cRow, error: cErr } = await supabase
         .from("jr_user_credits")
         .select("vision_credits")
@@ -85,6 +76,7 @@ export async function POST(req: Request) {
           .maybeSingle<JrCreditsRow>();
 
         if (insErr) return jsonError("Failed to init credits", 500);
+
         creditsLeft = typeof created?.vision_credits === "number" ? created.vision_credits : 3;
       } else {
         creditsLeft = typeof cRow.vision_credits === "number" ? cRow.vision_credits : 0;
@@ -120,10 +112,10 @@ export async function POST(req: Request) {
     const b64 = rsp.data?.[0]?.b64_json;
     if (!b64) return jsonError("Empty image response", 500);
 
-    // Décrément crédits uniquement si succès (et non premium)
+    // Decrement credits only on success (freemium only)
     let newCredits: number | null = null;
 
-    if (!isPremium) {
+    if (!ent.vision.unlimited) {
       const nextCredits = (creditsLeft as number) - 1;
 
       const { data: saved, error: upErr } = await supabase

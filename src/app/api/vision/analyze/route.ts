@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
+import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
 
 export const runtime = "nodejs";
-
-type JrProfileRow = {
-  is_premium: boolean | null;
-};
 
 type JrCreditsRow = {
   vision_credits: number | null;
@@ -47,6 +44,7 @@ export async function POST(req: Request) {
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!url || !anonKey) return jsonError("Supabase env missing", 500);
 
+    // 1) Auth user (RLS) via bearer token
     const supabase = createClient(url, anonKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
       auth: { persistSession: false },
@@ -55,30 +53,23 @@ export async function POST(req: Request) {
     const { data: u, error: uErr } = await supabase.auth.getUser();
     if (uErr || !u?.user?.id) return jsonError("Unauthorized (invalid token)", 401);
 
+    // 2) Parse images
     const form = await req.formData();
     const files = (form.getAll("images") ?? []).filter((f): f is File => f instanceof File);
     const single = form.get("image");
     const allFiles: File[] = files.length ? files : single instanceof File ? [single] : [];
 
     if (allFiles.length === 0) return jsonError("Missing image", 400);
-
     const picked = allFiles.slice(0, 3);
 
-    // Charger premium (RLS OK)
-    const { data: profile, error: pErr } = await supabase
-      .from("jr_user_profile")
-      .select("is_premium")
-      .eq("user_id", u.user.id)
-      .maybeSingle<JrProfileRow>();
+    // 3) Central premium rules
+    const ent = await getUserEntitlements(url, anonKey, accessToken);
+    const isPremium = ent.isPremium;
 
-    if (pErr) return jsonError("Failed to load profile", 500);
-
-    const isPremium = Boolean(profile?.is_premium);
-
-    // Charger crédits si non premium
+    // 4) Credits gate (freemium)
     let creditsLeft: number | null = null;
 
-    if (!isPremium) {
+    if (!ent.vision.unlimited) {
       const { data: cRow, error: cErr } = await supabase
         .from("jr_user_credits")
         .select("vision_credits")
@@ -96,11 +87,9 @@ export async function POST(req: Request) {
 
         if (insErr) return jsonError("Failed to init credits", 500);
 
-        const v = created?.vision_credits;
-        creditsLeft = typeof v === "number" ? v : 3;
+        creditsLeft = typeof created?.vision_credits === "number" ? created.vision_credits : 3;
       } else {
-        const v = cRow.vision_credits;
-        creditsLeft = typeof v === "number" ? v : 0;
+        creditsLeft = typeof cRow.vision_credits === "number" ? cRow.vision_credits : 0;
       }
 
       if (!Number.isFinite(creditsLeft) || (creditsLeft as number) <= 0) {
@@ -108,7 +97,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // OpenAI Vision
+    // 5) OpenAI Vision (text output)
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const images: { mime: string; base64: string }[] = [];
@@ -143,10 +132,10 @@ export async function POST(req: Request) {
     const text = completion.choices[0]?.message?.content?.trim();
     if (!text) return jsonError("Empty AI response", 500);
 
-    // Décrément crédits uniquement si succès (et non premium)
+    // 6) Decrement credits only on success (freemium only)
     let newCredits: number | null = null;
 
-    if (!isPremium) {
+    if (!ent.vision.unlimited) {
       const nextCredits = (creditsLeft as number) - 1;
 
       const { data: saved, error: upErr } = await supabase
@@ -157,8 +146,7 @@ export async function POST(req: Request) {
 
       if (upErr) return jsonError("Failed to decrement credits", 500);
 
-      const v = saved?.vision_credits;
-      newCredits = typeof v === "number" ? v : nextCredits;
+      newCredits = typeof saved?.vision_credits === "number" ? saved.vision_credits : nextCredits;
     }
 
     const body: VisionApiOk = {
