@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
+import { VISION_FOOD_PROMPT_V1, VISION_FOOD_USER_TASK_V1 } from "@/lib/ai/visionPrompts";
 
 export const runtime = "nodejs";
 
@@ -29,7 +30,7 @@ function jsonError(error: string, status: number, message?: string) {
 function getBearerToken(req: Request): string | null {
   const h = req.headers.get("authorization");
   if (!h) return null;
-  const m = h.match(/^Bearer\s+(.+)$/i);
+  const m = h.match(/^Bearer\\s+(.+)$/i);
   return m ? m[1] : null;
 }
 
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!url || !anonKey) return jsonError("Supabase env missing", 500);
 
-    // 1) Auth user (RLS) via bearer token
+    // Auth user (RLS) via bearer token
     const supabase = createClient(url, anonKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
       auth: { persistSession: false },
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
     const { data: u, error: uErr } = await supabase.auth.getUser();
     if (uErr || !u?.user?.id) return jsonError("Unauthorized (invalid token)", 401);
 
-    // 2) Parse images
+    // Parse images
     const form = await req.formData();
     const files = (form.getAll("images") ?? []).filter((f): f is File => f instanceof File);
     const single = form.get("image");
@@ -62,11 +63,11 @@ export async function POST(req: Request) {
     if (allFiles.length === 0) return jsonError("Missing image", 400);
     const picked = allFiles.slice(0, 3);
 
-    // 3) Central premium rules
+    // Central premium rules
     const ent = await getUserEntitlements(url, anonKey, accessToken);
     const isPremium = ent.isPremium;
 
-    // 4) Credits gate (freemium)
+    // Credits gate (freemium)
     let creditsLeft: number | null = null;
 
     if (!ent.vision.unlimited) {
@@ -86,7 +87,6 @@ export async function POST(req: Request) {
           .maybeSingle<JrCreditsRow>();
 
         if (insErr) return jsonError("Failed to init credits", 500);
-
         creditsLeft = typeof created?.vision_credits === "number" ? created.vision_credits : 3;
       } else {
         creditsLeft = typeof cRow.vision_credits === "number" ? cRow.vision_credits : 0;
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 5) OpenAI Vision (text output)
+    // OpenAI Vision (text output)
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const images: { mime: string; base64: string }[] = [];
@@ -110,16 +110,11 @@ export async function POST(req: Request) {
       model: "gpt-4.1-mini",
       temperature: 0.2,
       messages: [
-        {
-          role: "system",
-          content:
-            "Tu es un diététicien en cabinet. Analyse l'image (frigo/ticket/plat) et réponds en français, concis et actionnable.\n" +
-            "Structure: 1) Ce que je vois 2) Points forts 3) Points à corriger 4) Recommandations concrètes (3-5 puces).",
-        },
+        { role: "system", content: VISION_FOOD_PROMPT_V1 },
         {
           role: "user",
           content: [
-            { type: "text", text: "Analyse nutritionnelle de 1 à 3 images (frigo/ticket/plat). Synthèse unique." },
+            { type: "text", text: VISION_FOOD_USER_TASK_V1 },
             ...images.map((img) => ({
               type: "image_url",
               image_url: { url: `data:${img.mime};base64,${img.base64}` },
@@ -132,7 +127,7 @@ export async function POST(req: Request) {
     const text = completion.choices[0]?.message?.content?.trim();
     if (!text) return jsonError("Empty AI response", 500);
 
-    // 6) Decrement credits only on success (freemium only)
+    // Decrement credits only on success (freemium only)
     let newCredits: number | null = null;
 
     if (!ent.vision.unlimited) {

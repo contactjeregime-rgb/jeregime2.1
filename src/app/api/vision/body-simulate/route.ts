@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI, { toFile } from "openai";
 import { getUserEntitlements } from "@/lib/entitlements/getUserEntitlements";
+import { VISION_BODY_PROMPT_V1 } from "@/lib/ai/visionPrompts";
 
 export const runtime = "nodejs";
 
@@ -56,7 +57,7 @@ export async function POST(req: Request) {
     const ent = await getUserEntitlements(url, anonKey, accessToken);
     const isPremium = ent.isPremium;
 
-    // Credits gate for freemium
+    // Credits gate (freemium)
     let creditsLeft: number | null = null;
 
     if (!ent.vision.unlimited) {
@@ -96,15 +97,10 @@ export async function POST(req: Request) {
     const disclaimer =
       "Simulation illustrative (non médicale, non contractuelle). Le rendu dépend de la photo, de la morphologie et des paramètres.";
 
-    const prompt =
-      "À partir de cette photo d'une personne, génère une version 'après' illustrative d'une transformation fitness/affinement réaliste. " +
-      "Conserve l'identité et le visage (si visible), le style photo et l'éclairage, mais montre une silhouette plus tonique et plus affinée. " +
-      "Aucune nudité explicite. Rendu naturel, crédible, type 'avant/après' sans texte ni watermark.";
-
     const rsp = await client.images.edit({
       model: "gpt-image-1",
       image: [input],
-      prompt,
+      prompt: VISION_BODY_PROMPT_V1,
       size: "1024x1536",
       input_fidelity: "high",
     });
