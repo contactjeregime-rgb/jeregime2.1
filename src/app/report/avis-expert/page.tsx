@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -178,17 +178,17 @@ export default function AvisExpertChatPage() {
 
   const searchParams = useSearchParams();
   const regen = searchParams.get("regen");
-  const [autoRegenDone, setAutoRegenDone] = useState(false);
+  const autoRegenDoneRef = useRef(false);
 
   useEffect(() => {
-    if (autoRegenDone) return;
+    if (autoRegenDoneRef.current) return;
     if (regen === "1") {
-      setAutoRegenDone(true);
+      autoRegenDoneRef.current = true;
       generateNewOpinion().finally(() => {
         router.replace("/report/avis-expert");
       });
     }
-  }, [regen, autoRegenDone]);
+  }, [regen]);
 
   const bubbles2 = useMemo<Bubble[]>(() => {
     if (!coach) return [];
