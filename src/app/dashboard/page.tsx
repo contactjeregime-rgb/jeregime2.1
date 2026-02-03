@@ -110,6 +110,12 @@ export default function DashboardPage() {
   const dLeft = useMemo(() => daysUntil(gates?.features_unlock_at ?? null), [gates?.features_unlock_at]);
   const creditsLeft = typeof visionCredits === "number" ? Math.max(0, visionCredits) : null;
 
+  const visionLocked = !gates?.is_premium && creditsLeft !== null && creditsLeft <= 0;
+
+  const primaryBtn = "inline-flex rounded-xl bg-black px-5 py-3 text-sm font-medium text-white";
+  const secondaryBtn = "inline-flex rounded-xl border border-zinc-300 px-5 py-3 text-sm font-medium hover:bg-zinc-50";
+  const disabledBtn = "inline-flex rounded-xl bg-zinc-200 px-5 py-3 text-sm font-medium text-zinc-500 cursor-not-allowed";
+
   if (checking) {
     return (
       <main className="min-h-screen flex items-center justify-center px-6 py-16 bg-zinc-50">
@@ -133,93 +139,108 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold text-zinc-900">Votre espace</h1>
             {premiumBadge}
           </div>
-          <p className="text-zinc-600">Profil, bilan, outils IA — dans un cadre cabinet, propre et structuré.</p>
+          <p className="text-zinc-600">Suivi, bilan, outils IA — simple, structuré, efficace.</p>
         </header>
 
-        {/* ROW 1: Profil / Bilan */}
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <p className="text-xs font-medium tracking-wide text-zinc-500">PROFIL</p>
-            <h2 className="mt-2 text-base font-semibold text-zinc-900">Mes informations</h2>
-            <p className="mt-1 text-sm text-zinc-600">Mettre à jour vos réponses d’onboarding (sans saisie libre).</p>
+        {/* 1) SUIVI QUOTIDIEN */}
+        <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-medium tracking-wide text-zinc-500">SUIVI QUOTIDIEN</p>
+          <h2 className="mt-2 text-base font-semibold text-zinc-900">Carnet de suivi</h2>
+          <p className="mt-1 text-sm text-zinc-600">
+            Chaque jour : état, faim, sommeil, activité. Base du coaching (et historique).
+          </p>
 
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Link
-                href="/dashboard/profile"
-                className="inline-flex rounded-xl border border-zinc-300 px-5 py-3 text-sm font-medium hover:bg-zinc-50"
-              >
-                Modifier mes réponses
-              </Link>
-            </div>
-
-            <p className="mt-3 text-xs text-zinc-500">
-              Après modification, vous pourrez régénérer votre rapport et obtenir un nouvel avis.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <p className="text-xs font-medium tracking-wide text-zinc-500">BILAN</p>
-            <h2 className="mt-2 text-base font-semibold text-zinc-900">Rapport & avis</h2>
-            <p className="mt-1 text-sm text-zinc-600">Consultez votre rapport sauvegardé et l’avis du diététicien.</p>
-
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Link href="/report" className="rounded-xl bg-black px-5 py-3 text-center text-sm font-medium text-white">
-                Consulter mon rapport
-              </Link>
-              <Link
-                href="/report/avis-expert"
-                className="rounded-xl border border-zinc-300 px-5 py-3 text-center text-sm font-medium hover:bg-zinc-50"
-              >
-                Avis du diététicien
-              </Link>
-            </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Link href="/suivi" className={primaryBtn}>
+              Ouvrir mon suivi
+            </Link>
+            <span className="text-xs text-zinc-500">Le coach/avis sur le suivi est géré à l’intérieur du carnet.</span>
           </div>
         </section>
 
-        {/* ROW 2: Outils IA */}
-        <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-medium tracking-wide text-zinc-500">OUTILS IA</p>
-              <h2 className="mt-2 text-base font-semibold text-zinc-900">IA Vision</h2>
-              <p className="mt-1 text-sm text-zinc-600">
-                Deux modes : alimentation (frigo/ticket/plat) et corps (simulation illustrative).
-              </p>
+        {/* 2) IA VISION (2 modes séparés) */}
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* Vision Corps */}
+          <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-medium tracking-wide text-zinc-500">IA VISION</p>
+            <h2 className="mt-2 text-base font-semibold text-zinc-900">Vision Corps (illustratif)</h2>
+            <p className="mt-1 text-sm text-zinc-600">
+              Simulation pédagogique. Suivi photo (bientôt).
+            </p>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              {visionLocked ? (
+                <button type="button" disabled className={disabledBtn}>
+                  Lancer Vision Corps
+                </button>
+              ) : (
+                <Link href="/vision/corps" className={primaryBtn}>
+                  Lancer Vision Corps
+                </Link>
+              )}
+
+              {!gates?.is_premium && creditsLeft !== null ? (
+                <span className="text-sm text-zinc-700">
+                  <span className="font-medium">{creditsLeft}</span>{" "}
+                  {creditsLeft > 1 ? "analyses gratuites restantes" : "analyse gratuite restante"}.
+                </span>
+              ) : gates?.is_premium ? (
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">Illimité</span>
+              ) : null}
             </div>
 
-            {!gates?.is_premium ? (
-              <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">3 essais gratuits</span>
-            ) : (
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">Illimité</span>
-            )}
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <Link href="/vision" className="rounded-xl bg-black px-5 py-3 text-sm font-medium text-white">
-              Ouvrir IA Vision
-            </Link>
-
-            {!gates?.is_premium ? (
-              <span className="text-sm text-zinc-700">
-                Crédits restants : <span className="font-medium">{creditsLeft ?? "—"}</span> / 3
-              </span>
+            {visionLocked ? (
+              <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4">
+                <p className="text-sm font-semibold text-red-900">Analyses gratuites épuisées</p>
+                <p className="mt-1 text-sm text-red-800">Active Premium pour débloquer l’analyse illimitée.</p>
+                <div className="mt-3">
+                  <Link href="/pricing" className="inline-flex rounded-xl bg-black px-5 py-3 text-sm font-medium text-white">
+                    Activer Premium
+                  </Link>
+                </div>
+              </div>
             ) : null}
           </div>
 
-          {!gates?.is_premium && creditsLeft !== null && creditsLeft <= 0 ? (
-            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4">
-              <p className="text-sm font-semibold text-red-900">Crédits épuisés</p>
-              <p className="mt-1 text-sm text-red-800">Passe Premium pour débloquer l’analyse photo illimitée.</p>
-              <div className="mt-3">
-                <Link href="/pricing" className="inline-flex rounded-xl bg-black px-5 py-3 text-sm font-medium text-white">
-                  Activer Premium
+          {/* Vision Alimentation */}
+          <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-medium tracking-wide text-zinc-500">IA VISION</p>
+            <h2 className="mt-2 text-base font-semibold text-zinc-900">Vision Alimentation</h2>
+            <p className="mt-1 text-sm text-zinc-600">
+              Photo frigo / placard / ticket / plat : analyse alimentaire (V1).
+            </p>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              {visionLocked ? (
+                <button type="button" disabled className={disabledBtn}>
+                  Lancer Vision Alimentation
+                </button>
+              ) : (
+                <Link href="/vision/alimentation" className={secondaryBtn}>
+                  Lancer Vision Alimentation
                 </Link>
-              </div>
+              )}
+
+              <span className="text-xs text-zinc-500">Secondaire (marketing non prioritaire).</span>
             </div>
-          ) : null}
+          </div>
         </section>
 
-        {/* ROW 3: Premium */}
+        {/* 3) BILAN / COACH / PROFIL */}
+        <section className="grid grid-cols-1 gap-4">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-medium tracking-wide text-zinc-500">PROFIL</p>
+            <h2 className="mt-2 text-base font-semibold text-zinc-900">Mes informations</h2>
+            <p className="mt-1 text-sm text-zinc-600">Mettre à jour vos réponses (sans saisie libre).</p>
+            <div className="mt-4">
+              <Link href="/report/avis-expert" className="inline-flex rounded-xl border border-zinc-300 px-5 py-3 text-sm font-medium hover:bg-zinc-50">
+                Consulter l’avis du diététicien
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* 4) PREMIUM */}
         <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-sm">
           <div className="flex items-start justify-between gap-6">
             <div>
@@ -230,7 +251,7 @@ export default function DashboardPage() {
                   <>✅ Premium actif : toutes les fonctionnalités sont disponibles.</>
                 ) : dLeft !== null ? (
                   <>
-                    Déblocage progressif dans <span className="font-medium">{dLeft}</span> jour(s) (teasing). Accès complet via Premium.
+                    Déblocage progressif dans <span className="font-medium">{dLeft}</span> jour(s). Accès complet via Premium.
                   </>
                 ) : (
                   <>Accès complet via Premium.</>

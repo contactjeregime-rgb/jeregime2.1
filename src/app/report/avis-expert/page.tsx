@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 type Bubble = { title?: string; text?: string; bullets?: string[] };
@@ -175,6 +175,21 @@ export default function AvisExpertChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+
+  const searchParams = useSearchParams();
+  const regen = searchParams.get("regen");
+  const [autoRegenDone, setAutoRegenDone] = useState(false);
+
+  useEffect(() => {
+    if (autoRegenDone) return;
+    if (regen === "1") {
+      setAutoRegenDone(true);
+      generateNewOpinion().finally(() => {
+        router.replace("/report/avis-expert");
+      });
+    }
+  }, [regen, autoRegenDone]);
+
   const bubbles2 = useMemo<Bubble[]>(() => {
     if (!coach) return [];
     const parts: Bubble[] = [];
@@ -315,20 +330,13 @@ export default function AvisExpertChatPage() {
                     ))}
                   </div>
 
-                  <div className="mt-6 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={generateNewOpinion}
-                      disabled={generating}
-                      className="rounded-xl border border-gray-300 px-6 py-3 text-sm font-medium hover:bg-gray-50 disabled:opacity-60"
-                    >
-                      {generating ? "Génération…" : "Générer un nouvel avis"}
-                    </button>
+                  
 
-                    <Link href="/report" className="rounded-xl bg-black px-6 py-3 text-sm font-medium text-white">
-                      Consulter mon rapport
-                    </Link>
-                  </div>
+                    <div className="mt-6">
+                      <Link href="/dashboard/profile" className="inline-flex rounded-xl border border-gray-300 px-6 py-3 text-sm font-medium hover:bg-gray-50">
+                        Modifier mes réponses
+                      </Link>
+                    </div>
                 </>
               )}
             </div>

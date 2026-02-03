@@ -1,17 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
+import crypto from "crypto";
 import { MEDICAL_REPORT_PROMPT } from "@/lib/ai/medicalReportPrompt";
-import { buildMedicalContext } from "@/lib/ai/medicalContext";
-
-type ReportRow = {
-  id: string;
-  user_id: string;
-  report_version: number;
-  report_json: unknown;
-  created_at: string;
-  updated_at: string;
-};
 
 type OpinionInsert = {
   user_id: string;
@@ -30,15 +21,11 @@ function getBearerToken(req: Request): string | null {
 export async function GET(req: Request) {
   try {
     const accessToken = getBearerToken(req);
-    if (!accessToken) {
-      return NextResponse.json({ error: "Unauthorized (missing bearer token)" }, { status: 401 });
-    }
+    if (!accessToken) return NextResponse.json({ error: "Unauthorized (missing bearer token)" }, { status: 401 });
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !anonKey) {
-      return NextResponse.json({ error: "Supabase env missing" }, { status: 500 });
-    }
+    if (!url || !anonKey) return NextResponse.json({ error: "Supabase env missing" }, { status: 500 });
 
     const supabase = createClient(url, anonKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -46,9 +33,7 @@ export async function GET(req: Request) {
     });
 
     const { data: u, error: uErr } = await supabase.auth.getUser();
-    if (uErr || !u?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized (invalid token)" }, { status: 401 });
-    }
+    if (uErr || !u?.user?.id) return NextResponse.json({ error: "Unauthorized (invalid token)" }, { status: 401 });
 
     const { data: last, error: lErr } = await supabase
       .from("jr_user_coach_opinion")
@@ -89,20 +74,14 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json({ error: "OPENAI_API_KEY missing" }, { status: 500 });
-    }
+    if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: "OPENAI_API_KEY missing" }, { status: 500 });
 
     const accessToken = getBearerToken(req);
-    if (!accessToken) {
-      return NextResponse.json({ error: "Unauthorized (missing bearer token)" }, { status: 401 });
-    }
+    if (!accessToken) return NextResponse.json({ error: "Unauthorized (missing bearer token)" }, { status: 401 });
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !anonKey) {
-      return NextResponse.json({ error: "Supabase env missing" }, { status: 500 });
-    }
+    if (!url || !anonKey) return NextResponse.json({ error: "Supabase env missing" }, { status: 500 });
 
     const supabase = createClient(url, anonKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -110,25 +89,24 @@ export async function POST(req: Request) {
     });
 
     const { data: u, error: uErr } = await supabase.auth.getUser();
-    if (uErr || !u?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized (invalid token)" }, { status: 401 });
-    }
+    if (uErr || !u?.user?.id) return NextResponse.json({ error: "Unauthorized (invalid token)" }, { status: 401 });
 
-    // 1) Charger le rapport sauvegardé (obligatoire)
-    const { data: report, error: rErr } = await supabase
-      .from("jr_user_report")
-      .select("id,user_id,report_version,report_json,created_at,updated_at")
+    // 1) Charger le PROFIL (source de vérité)
+    const { data: profile, error: pErr } = await supabase
+      .from("jr_user_profile")
+      .select("*")
       .eq("user_id", u.user.id)
-      .maybeSingle<ReportRow>();
+      .maybeSingle();
 
-    if (rErr) return NextResponse.json({ error: "Failed to load report" }, { status: 500 });
-    if (!report) return NextResponse.json({ error: "No saved report" }, { status: 404 });
+    if (pErr) return NextResponse.json({ error: "Failed to load profile" }, { status: 500 });
+    if (!profile) return NextResponse.json({ error: "No saved profile" }, { status: 404 });
 
-    // 2) Appel IA (on réutilise le prompt médical existant pour V1)
+    const profileJson = JSON.stringify(profile);
+    const fingerprint = crypto.createHash("sha256").update(profileJson).digest("hex").slice(0, 12);
+
+    // 2) Appel IA (obliger un champ qui change si le profil change)
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const medicalContext = buildMedicalContext(report.report_json);
+    const today = new Date().toISOString().slice(0, 10);
 
     const completion = await client.chat.completions.create({
       model: "gpt-4.1-mini",
@@ -136,14 +114,14 @@ export async function POST(req: Request) {
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: MEDICAL_REPORT_PROMPT },
-        { role: "system", content: medicalContext },
         {
           role: "user",
           content:
             `Date du jour (YYYY-MM-DD): ${today}\n` +
-            `TÂCHE: produire un AVIS DU DIÉTÉTICIEN (cabinet) basé sur le rapport utilisateur.\n` +
-            `Contraintes: ton professionnel, actionnable, pas infantilisant.\n` +
-            `RAPPORT UTILISATEUR (JSON):\n${JSON.stringify(report.report_json)}`,
+            `TÂCHE: produire un AVIS DU DIÉTÉTICIEN basé sur le PROFIL UTILISATEUR.\n` +
+            `IMPORTANT: tu DOIS inclure dans header.profile_fingerprint EXACTEMENT la valeur: ${fingerprint}\n` +
+            `IMPORTANT: tu DOIS citer au moins 3 éléments du profil dans ton avis (ex: objectif, alcool/tabac, sommeil, activité).\n` +
+            `PROFIL UTILISATEUR (JSON):\n${profileJson}`,
         },
       ],
     });
@@ -151,17 +129,21 @@ export async function POST(req: Request) {
     const content = completion.choices[0]?.message?.content;
     if (!content) return NextResponse.json({ error: "Empty AI response" }, { status: 500 });
 
-    let parsed: unknown;
+    let parsed: any;
     try {
       parsed = JSON.parse(content);
     } catch {
       return NextResponse.json({ error: "AI returned non-JSON", raw: content.slice(0, 400) }, { status: 500 });
     }
 
-    // 3) Enregistrer l’avis (historique)
+    // Hard safety: si l’IA n’a pas mis le fingerprint, on l’injecte (preuve côté client)
+    parsed.header = parsed.header ?? {};
+    parsed.header.profile_fingerprint = parsed.header.profile_fingerprint ?? fingerprint;
+
+    // 3) Sauvegarder l’avis (historique)
     const payload: OpinionInsert = {
       user_id: u.user.id,
-      report_id: report.id ?? null,
+      report_id: null,
       opinion_version: 1,
       opinion_json: parsed,
     };
@@ -172,17 +154,13 @@ export async function POST(req: Request) {
       .select("id,created_at,report_id,opinion_version")
       .maybeSingle();
 
-    if (sErr) {
-      return NextResponse.json({ error: "Failed to save opinion" }, { status: 500 });
-    }
+    if (sErr) return NextResponse.json({ error: "Failed to save opinion" }, { status: 500 });
 
     return NextResponse.json(
       {
         ok: true,
         opinionId: saved?.id ?? null,
         opinionCreatedAt: saved?.created_at ?? null,
-        reportId: report.id,
-        reportVersion: report.report_version,
         opinion_version: 1,
         opinion_json: parsed,
       },

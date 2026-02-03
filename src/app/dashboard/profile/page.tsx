@@ -415,52 +415,55 @@ export default function ProfileEditPage() {
     setMsg(null);
     setSaving(true);
 
-    const { data: userRes } = await supabase.auth.getUser();
-    const user = userRes?.user;
-    if (!user) {
-      router.replace("/login");
-      return;
-    }
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const user = userRes?.user;
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
 
-    const { error } = await supabase
-      .from("jr_user_profile")
-      .update({
-        age: Number(age),
-        sex,
-        height_cm: Number(height),
-        weight_kg: Number(weight),
-        target_weight_kg: Number(targetWeight),
+      const { error } = await supabase
+        .from("jr_user_profile")
+        .update({
+          age: Number(age),
+          sex,
+          height_cm: Number(height),
+          weight_kg: Number(weight),
+          target_weight_kg: Number(targetWeight),
 
-        goal_primary: goal,
-        activity_level: activity,
-        work_type: work,
-        eating_out_freq: eatingOut,
+          goal_primary: goal,
+          activity_level: activity,
+          work_type: work,
+          eating_out_freq: eatingOut,
 
-        diet_type: dietType,
-        diet_tags: dietTags,
-        meal_style: mealStyle,
-        grocery_budget: groceryBudget,
-        cook_time: cookTime,
-        kitchen_tools: kitchenTools,
+          diet_type: dietType,
+          diet_tags: dietTags,
+          meal_style: mealStyle,
+          grocery_budget: groceryBudget,
+          cook_time: cookTime,
+          kitchen_tools: kitchenTools,
 
-        sleep_bedtime: bedtime,
-        sleep_wakeup: wakeup,
-        sleep_quality: sleepQuality,
+          sleep_bedtime: bedtime,
+          sleep_wakeup: wakeup,
+          sleep_quality: sleepQuality,
 
-        alcohol_freq: alcohol,
-        smoking_status: smoking,
-        vaping_status: vaping,
-      })
-      .eq("user_id", user.id);
+          alcohol_freq: alcohol,
+          smoking_status: smoking,
+          vaping_status: vaping,
+        })
+        .eq("user_id", user.id);
 
-    if (error) {
+      if (error) {
+        setErr(error.message || "Impossible d’enregistrer.");
+        return;
+      }
+
+      setMsg("Enregistré. Redirection vers l’avis…");
+      router.push("/report/avis-expert?regen=1");
+    } finally {
       setSaving(false);
-      setErr(error.message || "Impossible d’enregistrer.");
-      return;
     }
-
-    setSaving(false);
-    setMsg("Profil mis à jour.");
   }
 
   if (checking) {
@@ -613,16 +616,12 @@ export default function ProfileEditPage() {
             disabled={!canSave}
             className="rounded-lg bg-black text-white px-6 py-3 font-medium disabled:opacity-40"
           >
-            {saving ? "Enregistrement…" : "Enregistrer"}
+            {saving ? "Enregistrement…" : "Enregistrer et redemander un avis"}
           </button>
 
-          <Link href="/report" className="rounded-lg border border-zinc-300 px-6 py-3 font-medium">
-            Consulter mon rapport
+          <Link href="/report/avis-expert" className="rounded-lg border border-zinc-300 px-6 py-3 font-medium">
+            Consulter l’avis du diététicien
           </Link>
-
-          <p className="text-xs text-zinc-500">
-            Après modification : va sur /report puis clique “Régénérer & sauvegarder” si tu veux mettre à jour ton rapport.
-          </p>
         </div>
       </div>
     </main>
